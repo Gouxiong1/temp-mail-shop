@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>临时邮箱租用临时邮箱使用临时邮箱</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script></head>
+<body>
+<header><h1>临时邮箱租用临时邮箱使用临时邮箱</h1></header>
+<nav id="nav">
+<button data-v="shop" class="on">买邮箱</button><button data-v="query">查订单</button><button data-v="inbox">查看验证码</button><button data-v="wallet">我的钱包</button><button data-v="orders">我的订单 / 取货</button><button data-v="subsite">注册分站</button><button data-v="register">注册</button><button data-v="login">登录</button><button data-v="admin">我的后台</button>
+<span id="who" style="margin-left:auto;font-size:13px"></span>
+</nav>
+<main>
+<section id="view-shop" class="view"><div class="card">
+<h2>买临时邮箱</h2>
+<div class="notice">扫码支付传截图后机器自动确认，清楚的截图一般 30 秒内放行发货。</div>
+<label>选择站点</label><select id="siteSel"></select>
+<div id="siteInfo" class="muted"></div>
+<h3>选择时长</h3><div class="price-grid" id="tierGrid"></div>
+<label>数量</label><input id="qty" type="number" value="1" min="1" max="10">
+<div id="priceLine" style="margin:10px 0;font-weight:700"></div>
+<div id="selfNote" class="muted"></div>
+<h3>选择邮箱域名</h3>
+<div id="domainBox">
+<label><input type="radio" name="domain" value="mailtm" checked> <span>euploading.com（默认，秒发）</span></label><br>
+<label><input type="radio" name="domain" value="tmpmail.org"> <span id="domLabel-tmpmail.org">tmpmail.org（备胎）</span></label><br>
+<label><input type="radio" name="domain" value="teml.net"> <span id="domLabel-teml.net">teml.net（备胎）</span></label><br>
+<label><input type="radio" name="domain" value="tmpbox.net"> <span id="domLabel-tmpbox.net">tmpbox.net（备胎）</span></label>
+</div>
+<p class="muted">备胎域名是 moakt 的邮箱，目标网站屏蔽 euploading.com 时再选；备胎每个域名同时只有 1 个现货，卖完要等上一单到期才补货。</p>
+<h3>图形验证码（购买也要过）</h3>
+<div class="captcha-row"><canvas id="capBuy" width="140" height="44"></canvas><button type="button" class="ghost" onclick="drawCaptcha('buy')">换一张</button><input id="capBuyIn" placeholder="输入图中字母+数字" style="max-width:220px"></div>
+<h3>支付方式</h3>
+<label><input type="radio" name="pay" value="wallet" checked> 网站钱包支付（余额不足时不可用）</label><br>
+<label><input type="radio" name="pay" value="alipay"> 支付宝扫码</label><br>
+<label><input type="radio" name="pay" value="wechat"> 微信扫码</label>
+<div id="scanBox" style="display:none"><p id="qrTitle"></p><img id="qrImg" class="qr" src="alipay.jpg" alt="收款码">
+<p class="red">付完款请马上截图！截图是确认到账的唯一凭证</p>
+<label>上传付款截图</label><input type="file" id="shotFile" accept="image/*">
+<div id="shotMsg" class="muted"></div></div>
+<div id="buyMsg"></div>
+<button onclick="buyNow()">确认下单 / 发货</button>
+</div></section>
+
+<section id="view-query" class="view" style="display:none"><div class="card">
+<h2>🔍 查订单</h2>
+<p class="muted">游客、用户、任何人都能查，不用登录。输入下单时生成的订单号，或下单后发到的临时邮箱地址，查到那一单的临时邮箱、时长、金额和到期时间。不知道订单号和邮箱地址就查不到。</p>
+<label>订单号 或 临时邮箱地址</label><input id="queryInput" placeholder="例如 Ab3xK20261120202837qW9zP 或 xxxxx@euploading.com">
+<button onclick="queryOrder()">查询订单</button>
+<div id="queryResult"></div></div></section>
+
+<section id="view-inbox" class="view" style="display:none"><div class="card">
+<h2>📩 查看验证码 / 收件箱</h2>
+<p class="muted">输入买到的临时邮箱地址，点刷新查看收到的邮件和验证码。本站不显示来源网站的名字和链接。</p>
+<label>临时邮箱地址</label><input id="inboxAddr" placeholder="例如 xxxxx@euploading.com">
+<button onclick="showInbox()">刷新查看验证码</button>
+<div id="inboxList"></div></div></section>
+
+<section id="view-wallet" class="view" style="display:none"><div class="card">
+<h2>我的网站钱包</h2><div id="walletBox"></div>
+<h3>充值（最低 5 元，充多少到账 110%）</h3>
+<p class="muted">扫码支付，到账后按 110% 充入你的网站钱包。</p>
+<label>充值金额（元，最低 5）</label><input id="topAmt" type="number" value="5" min="5">
+<label>充值方式</label><select id="topPay"><option value="alipay">支付宝</option><option value="wechat">微信</option></select>
+<button onclick="showTopQR()">显示收款码去付款</button>
+<div id="topBox" style="display:none"><img id="topQR" class="qr" src="alipay.jpg"><p class="red">付完请马上截图，截图时间与上传时间相差超过 3 分钟不发货 / 不到账</p><label>上传付款截图</label><input type="file" id="topShot" accept="image/*"><button onclick="confirmTopup()">上传截图，自动确认到账</button><div id="topMsg"></div></div>
+<h3>钱包流水</h3><div id="txList"></div></div></section>
+
+<section id="view-orders" class="view" style="display:none"><div class="card"><h2>我的订单 / 取货</h2><div id="orderList"></div></div></section>
+
+<section id="view-subsite" class="view" style="display:none"><div class="card">
+<h2>注册分站</h2><p class="muted">注册前必须留一个常用邮箱，供半个月一结的分佣金用。</p>
+<label>分站名称</label><input id="ssName" placeholder="例如 我的临时邮箱站">
+<label>登录用户名</label><input id="ssUser">
+<label>常用邮箱（分佣金用，必填）</label><input id="ssEmail" placeholder="常用邮箱">
+<label>登录密码</label><input id="ssPass" type="password">
+<h3>图形验证码</h3><div class="captcha-row"><canvas id="capSub" width="140" height="44"></canvas><button type="button" class="ghost" onclick="drawCaptcha('sub')">换一张</button><input id="capSubIn" placeholder="输入图中字母+数字" style="max-width:220px"></div>
+<div id="ssMsg"></div><button onclick="registerSubsite()">提交注册分站</button>
+<h3>分站等级（累计售出）</h3><table><tr><th>累计售出</th><th>自己购买价</th><th>分成比例 a</th></tr><tr><td>10 单</td><td>95%</td><td>5%</td></tr><tr><td>50 单</td><td>90%</td><td>8%</td></tr><tr><td>100 单</td><td>80%</td><td>12%</td></tr><tr><td>200 单及以上</td><td>70%</td><td>20%</td></tr></table><p class="muted">未满 10 单：自己购买无优惠，分成 0%。分站站主在自己站点内购买不享受分成。分成半个月一结。</p>
+</div></section>
+
+<section id="view-register" class="view" style="display:none"><div class="card">
+<h2>注册</h2>
+<label>用户名</label><input id="rgUser"><label>邮箱</label><input id="rgEmail"><label>密码</label><input id="rgPass" type="password">
+<h3>图形验证码</h3><div class="captcha-row"><canvas id="capReg" width="140" height="44"></canvas><button type="button" class="ghost" onclick="drawCaptcha('reg')">换一张</button><input id="capRegIn" placeholder="输入图中字母+数字" style="max-width:220px"></div>
+<div id="rgMsg"></div><button onclick="registerUser()">注册</button>
+<p class="muted">已有账号？点上方“登录”去登录。</p></div></section>
+
+<section id="view-login" class="view" style="display:none"><div class="card">
+<h2>登录</h2>
+<label>邮箱（登录用注册邮箱）</label><input id="lgUser" placeholder="注册时用的邮箱"><label>密码</label><input id="lgPass" type="password"><button onclick="loginUser()">登录</button><button class="secondary" onclick="logout()">退出登录</button><div id="lgMsg"></div>
+<p class="muted">还没账号？点上方“注册”先注册。</p></div></section>
+
+<section id="view-admin" class="view" style="display:none"><div class="card">
+<h2>我的后台</h2>
+<div id="backendLogin" style="display:none"><p class="muted">请先登录（用注册时的邮箱和密码登录），登录后这里显示你的后台。</p><button onclick="show('login')">去登录</button></div>
+<div id="adminBox" style="display:none">
+<h3>概况</h3><div id="adminStats"></div>
+<h3>分站与等级</h3><div id="adminSites"></div>
+<h3>订单</h3><div id="adminOrders"></div>
+<h3>用户与钱包</h3><div id="adminUsers"></div>
+<h3>分成结算（半个月一结：每月 1 日、16 日）</h3><p id="settleInfo" class="muted"></p><button onclick="settleAll()">结算全部待结算分成到各站主钱包</button>
+<h3>改总站密码</h3><input id="adNewPass" type="password" placeholder="新密码"><button onclick="changeAdminPass()">修改密码</button>
+</div>
+<div id="subBox" style="display:none">
+<h3>我的分站</h3><div id="subInfo"></div>
+<h3>分站订单</h3><div id="subOrders"></div>
+<h3>我的分成</h3><div id="subComms"></div>
+</div>
+<div id="priceBox" style="display:none">
+<h3>定价</h3>
+<label>3小时（元）</label><input id="prP3" type="number" min="0" step="0.01">
+<label>12小时（元）</label><input id="prP12" type="number" min="0" step="0.01">
+<label>1天（元）</label><input id="prP24" type="number" min="0" step="0.01">
+<label>3天（元）</label><input id="prP72" type="number" min="0" step="0.01">
+<label>7天（元）</label><input id="prP168" type="number" min="0" step="0.01">
+<div id="prMsg"></div><button onclick="saveMyPrices()">保存定价</button>
+</div>
+<div id="plainBox" style="display:none"><p class="muted">你是普通用户，钱包和订单在“我的钱包”和“我的订单 / 取货”里看。</p></div>
+</div></section>
+</main>
+<script src="app-supabase.js"></script>
+</body></html>
