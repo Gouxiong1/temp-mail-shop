@@ -88,10 +88,10 @@ async function renderShop() {
 }
 function updateTier() {
   const s = siteById(document.getElementById('siteSel').value);
-  document.getElementById('siteInfo').innerHTML = '本站价格：3小时 ' + money(s.price_h3_cents) + ' · 12小时 ' + money(s.price_h12_cents) + ' · 1天 ' + money(s.price_h24_cents) + ' · 3天 ' + money(s.price_h72_cents) + ' · 7天 ' + money(s.price_h168_cents);
+  document.getElementById('siteInfo').innerHTML = '价格：3小时 ' + money(s.price_h3_cents) + ' · 12小时 ' + money(s.price_h12_cents) + ' · 1天 ' + money(s.price_h24_cents) + ' · 3天 ' + money(s.price_h72_cents) + ' · 7天 ' + money(s.price_h168_cents);
   const g = document.getElementById('tierGrid');
   g.innerHTML = [['h3', '3小时', s.price_h3_cents], ['h12', '12小时', s.price_h12_cents], ['h24', '1天', s.price_h24_cents], ['h72', '3天', s.price_h72_cents], ['h168', '7天', s.price_h168_cents]].map(function (a, i) {
-    return '<div class="price ' + (i === 0 ? 'sel' : '') + '" data-k="' + a[0] + '" onclick="pickTier(\'' + a[0] + '\')"><b>' + a[1] + '</b><br><span style="font-size:20px">' + money(a[2]) + '</span><br><span class="muted">本站价</span></div>';
+    return '<div class="price ' + (i === 0 ? 'sel' : '') + '" data-k="' + a[0] + '" onclick="pickTier(\'' + a[0] + '\')"><b>' + a[1] + '</b><br><span style="font-size:20px">' + money(a[2]) + '</span></div>';
   }).join('');
   g.dataset.k = 'h3'; calcPrice(); refreshDomainStock();
 }
