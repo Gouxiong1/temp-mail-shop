@@ -183,7 +183,7 @@ function pollProof(proofId, msgEl, onApproved) {
   }, 5000);
 }
 function orderOkHtml(data, email) {
-  return '<div class="ok">✅ 已发货！订单号：<b>' + esc(data.order_id) + '</b> <button class="ghost" onclick="navigator.clipboard.writeText(\'' + esc(data.order_id) + '\')">复制订单号</button><br>临时邮箱：<b>' + esc(email) + '</b> <button class="ghost" onclick="navigator.clipboard.writeText(\'' + esc(email) + '\')">复制邮箱</button><br>时长 ' + esc(tierLabel(data.tier || '')) + '，取货区显示一份；收件箱里也会收到发货邮件。'
+  return '<div class="ok">已发货！订单号：<b>' + esc(data.order_id) + '</b> <button class="ghost" onclick="navigator.clipboard.writeText(\'' + esc(data.order_id) + '\')">复制订单号</button><br>临时邮箱：<b>' + esc(email) + '</b> <button class="ghost" onclick="navigator.clipboard.writeText(\'' + esc(email) + '\')">复制邮箱</button><br>时长 ' + esc(tierLabel(data.tier || '')) + '，取货区显示一份；收件箱里也会收到发货邮件。'
     + (data.comm_cents ? '<br>分站分成 ' + money(data.comm_cents) + ' 已记入站主待结算分成，半个月一结。' : '')
     + (data.is_self ? '<br>本站自购，本单不享受分成。' : '')
     + '<br>请记好订单号，以后不用登录也能在“查订单”里用订单号或这个邮箱地址查到这单。请去“我的订单 / 取货”查看倒计时，去“查看验证码”查看收到的验证码。</div>';

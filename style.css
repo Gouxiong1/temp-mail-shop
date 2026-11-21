@@ -1,33 +1,107 @@
-*{box-sizing:border-box}body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:#f4f6fb;color:#222}
-header{background:#1677ff;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10}
-header h1{margin:0;font-size:20px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
-nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid #e5e5e5;position:sticky;top:64px;z-index:9}
-nav button{border:1px solid #1677ff;background:#fff;color:#1677ff;border-radius:8px;padding:8px 12px;cursor:pointer}
-nav button.on,nav button:hover{background:#1677ff;color:#fff}
-main{max-width:980px;margin:0 auto;padding:16px}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-h2{margin:0 0 10px;font-size:18px}h3{margin:14px 0 8px;font-size:16px}
-label{display:block;font-size:14px;margin:8px 0 4px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:8px;font-size:15px}
-button{border:0;background:#1677ff;color:#fff;border-radius:8px;padding:10px 14px;cursor:pointer;font-size:15px}
-button.secondary{background:#666}button.danger{background:#e5484d}button.ghost{background:#eef4ff;color:#1677ff}
-button:disabled{background:#bbb;cursor:not-allowed}
-.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.price{border:2px solid #ddd;border-radius:10px;padding:12px;text-align:center;cursor:pointer}
-.price.sel{border-color:#1677ff;background:#eef4ff}
-.price b{font-size:20px}.muted{color:#666;font-size:13px}.red{color:#e5484d;font-weight:700}.green{color:#0a7d2c;font-weight:700}
-.captcha-row{display:flex;gap:8px;align-items:center}
-.addr-row{display:flex;gap:6px;align-items:center}
-.addr-row input{flex:1 1 auto;min-width:0}
-.addr-row .at{font-weight:700;color:#666;flex:0 0 auto}
-.addr-row select{flex:0 0 auto;width:auto;max-width:46%}
-.captcha-row canvas{border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}
-.tag{display:inline-block;background:#eef4ff;color:#1677ff;border-radius:20px;padding:2px 10px;font-size:12px;margin:2px}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid #eee;padding:8px 4px;text-align:left;vertical-align:top}
-.qr{max-width:220px;width:100%;border:1px solid #ddd;border-radius:8px}
-.alert{background:#fff2f0;border:1px solid #ffb4ab;border-radius:8px;padding:10px;margin:10px 0}
-.notice{background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:10px;margin:10px 0}
-.ok{background:#f6ffed;border:1px solid #b7eb8f;border-radius:8px;padding:10px;margin:10px 0}
+/* 临时邮箱站：暖灰底 + 墨色字 + 深青强调色，克制、干净、移动端优先 */
+:root{
+  --bg:#f3f1ec; --surface:#fffefb; --ink:#26241f; --ink-2:#55524a; --muted:#7a7466;
+  --line:#e5e0d3; --line-soft:#ece8db; --input-line:#d8d2c4;
+  --accent:#0f5f56; --accent-deep:#0b4a43; --accent-soft:#eaf2f0;
+  --red:#b3372f; --green:#2e7d4f;
+  --notice-bg:#f7f2e4; --notice-line:#e6dab9; --notice-ink:#5d5540;
+  --ok-bg:#edf4ef; --ok-line:#c6dcc9;
+  --alert-bg:#fbeeea; --alert-line:#eec9ba;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6}
+
+/* ---- 品牌头：纸面底 + 细线 + 信封小标 ---- */
+header{background:var(--bg);border-bottom:1px solid var(--line);padding:16px 16px 14px}
+.brand{display:flex;align-items:center;gap:11px;max-width:720px;margin:0 auto}
+.brand-mark{flex:0 0 auto;width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{display:block}
+header h1{margin:0;font-size:17px;line-height:1.4;font-weight:700;letter-spacing:.02em;color:var(--ink)}
+
+/* ---- 导航：单行横滑文字签，当前页深青下划线 ---- */
+nav{display:flex;align-items:center;gap:2px;padding:0 10px;background:rgba(243,241,236,.94);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;border:0;background:transparent;color:var(--ink-2);border-radius:0;padding:12px 11px 10px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button.on{color:var(--accent);border-bottom-color:var(--accent)}
+#who{flex:0 0 auto;color:var(--muted);white-space:nowrap;padding-left:8px}
+
+main{max-width:720px;margin:0 auto;padding:18px 16px 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(38,36,31,.04)}
+.view{display:block}
+
+/* ---- 字阶：h2 带一道细青杠，h3 是安静的小节签 ---- */
+h2{margin:0 0 12px;font-size:17px;line-height:1.4;font-weight:700;letter-spacing:.01em;padding-left:10px;border-left:3px solid var(--accent)}
+h3{margin:20px 0 8px;font-size:13px;line-height:1.4;font-weight:700;letter-spacing:.05em;color:var(--ink-2)}
+h3:first-child{margin-top:0}
+p{margin:0 0 10px}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:14px 0 6px}
+label.radio{display:flex;align-items:center;gap:8px;font-weight:400;color:var(--ink);margin:0 0 10px;cursor:pointer}
+label.radio input{width:auto;margin:0;accent-color:var(--accent)}
+
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--input-line);border-radius:10px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,95,86,.13)}
+input[type=file]{padding:9px 10px}
+input[type=radio]{accent-color:var(--accent)}
+button{border:0;background:var(--accent);color:#fff;border-radius:10px;padding:11px 18px;cursor:pointer;font-size:15px;font-weight:600;font-family:inherit;transition:background .15s ease}
+button:hover{background:var(--accent-deep)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{background:#b9b4a6;cursor:not-allowed}
+button.primary{display:block;width:100%;padding:13px 18px;margin:12px 0 4px}
+button.secondary{background:#e9e5da;color:var(--ink)}
+button.secondary:hover{background:#ddd7c8}
+button.danger{background:var(--red)}
+button.danger:hover{background:#93291f}
+button.ghost{background:transparent;color:var(--accent);border:1px solid #b9d2cd;padding:8px 12px;font-size:13px}
+button.ghost:hover{background:var(--accent-soft)}
+
+/* ---- 价格格子：自适应列，选中只换边框色和底色 ---- */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px}
+.price{border:1px solid var(--line);border-radius:12px;padding:13px 8px 11px;text-align:center;cursor:pointer;background:#fff;transition:border-color .15s ease,background .15s ease}
+.price:hover{border-color:#c9c2b0}
+.price.sel{border-color:var(--accent);background:var(--accent-soft)}
+.price b{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:2px}
+.price span{font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.price .muted{display:block;font-size:11px;margin-top:2px}
+.muted{color:var(--muted);font-size:13px}
+.red{color:var(--red);font-weight:700}
+.green{color:var(--green);font-weight:700}
+
+/* ---- 验证码、地址组合输入 ---- */
+.captcha-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.captcha-row input{flex:1 1 160px;min-width:0}
+.addr-row{display:flex;gap:0;align-items:stretch;border:1px solid var(--input-line);border-radius:10px;background:#fff;overflow:hidden}
+.addr-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,95,86,.13)}
+.addr-row input{flex:1 1 auto;min-width:0;border:0;box-shadow:none}
+.addr-row input:focus{box-shadow:none}
+.addr-row .at{font-weight:700;color:var(--muted);flex:0 0 auto;align-self:center;padding:0 2px}
+.addr-row select{flex:0 0 auto;width:auto;max-width:46%;border:0;background:var(--accent-soft);border-radius:0;box-shadow:none}
+.addr-row select:focus{box-shadow:none}
+.captcha-row canvas{border:1px solid var(--input-line);border-radius:8px;background:#fff;cursor:pointer;flex:0 0 auto}
+
+.tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600;margin:2px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid var(--line-soft);padding:9px 4px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.03em}
+.qr{max-width:220px;width:100%;border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
+.alert{background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:10px;padding:11px 13px;margin:12px 0}
+.notice{background:var(--notice-bg);border:1px solid var(--notice-line);border-radius:10px;padding:11px 13px;margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--notice-ink)}
+.ok{background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:10px;padding:11px 13px;margin:12px 0;word-break:break-all}
 .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.wallet{font-size:22px;font-weight:800;color:#1677ff}
-@media(max-width:640px){.price-grid{grid-template-columns:1fr}nav{top:78px}}
+.wallet{font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+#priceLine{font-variant-numeric:tabular-nums}
+
+/* ---- 页脚：一行克制小字 ---- */
+footer{max-width:720px;margin:6px auto 0;padding:18px 16px 34px;text-align:center;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+
+@media(max-width:640px){
+  header{padding:14px 12px 12px}
+  header h1{font-size:16px}
+  main{padding:14px 12px 4px}
+  .card{padding:16px 14px;border-radius:12px}
+  nav{padding:0 6px}
+  nav button{padding:11px 10px 9px;font-size:13.5px}
+  .price-grid{grid-template-columns:repeat(3,1fr)}
+  th,td{padding:7px 3px;font-size:13px}
+}
