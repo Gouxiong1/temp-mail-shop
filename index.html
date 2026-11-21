@@ -12,23 +12,22 @@
 <main>
 <section id="view-shop" class="view"><div class="card">
 <h2>买临时邮箱</h2>
-<div class="notice">扫码支付传截图后机器自动确认，清楚的截图一般 30 秒内放行发货。</div>
+<div class="notice">先点“点击生成”生成邮箱地址，再付款激活。扫码支付传截图后机器自动确认，清楚的截图一般 30 秒内放行发货。</div>
 <label>选择站点</label><select id="siteSel"></select>
 <div id="siteInfo" class="muted"></div>
 <h3>选择时长</h3><div class="price-grid" id="tierGrid"></div>
 <label>数量</label><input id="qty" type="number" value="1" min="1" max="10">
 <div id="priceLine" style="margin:10px 0;font-weight:700"></div>
 <div id="selfNote" class="muted"></div>
-<h3>选择邮箱域名</h3>
-<div id="domainBox">
-<label><input type="radio" name="domain" value="mailtm" checked> <span>euploading.com（默认，秒发）</span></label><br>
-<label><input type="radio" name="domain" value="tmpmail.org"> <span id="domLabel-tmpmail.org">tmpmail.org（备胎）</span></label><br>
-<label><input type="radio" name="domain" value="teml.net"> <span id="domLabel-teml.net">teml.net（备胎）</span></label><br>
-<label><input type="radio" name="domain" value="tmpbox.net"> <span id="domLabel-tmpbox.net">tmpbox.net（备胎）</span></label>
-</div>
-<p class="muted">备胎域名是 moakt 的邮箱，目标网站屏蔽 euploading.com 时再选；备胎每个域名同时只有 1 个现货，卖完要等上一单到期才补货。</p>
+<h3>自定义邮箱地址</h3>
+<div class="addr-row"><input id="emailPrefix" placeholder="输入你想要的邮箱前缀" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><span class="at">@</span><select id="domainSel"><option value="mailtm">euploading.com</option><option value="tmpmail.org">tmpmail.org</option><option value="teml.net">teml.net</option><option value="tmpbox.net">tmpbox.net</option></select></div>
+<div id="prefixHint" class="muted">前缀用小写字母、数字和 . _ -，3–32 位。</div>
 <h3>图形验证码（购买也要过）</h3>
 <div class="captcha-row"><canvas id="capBuy" width="140" height="44"></canvas><button type="button" class="ghost" onclick="drawCaptcha('buy')">换一张</button><input id="capBuyIn" placeholder="输入图中字母+数字" style="max-width:220px"></div>
+<div id="genMsg"></div>
+<button id="genBtn" onclick="generateOrder()">点击生成</button>
+<div id="genBox" style="display:none">
+<div id="genAddr" class="ok"></div>
 <h3>支付方式</h3>
 <label><input type="radio" name="pay" value="wallet" checked> 网站钱包支付（余额不足时不可用）</label><br>
 <label><input type="radio" name="pay" value="alipay"> 支付宝扫码</label><br>
@@ -37,8 +36,9 @@
 <p class="red">付完款请马上截图！截图是确认到账的唯一凭证</p>
 <label>上传付款截图</label><input type="file" id="shotFile" accept="image/*">
 <div id="shotMsg" class="muted"></div></div>
-<div id="buyMsg"></div>
-<button onclick="buyNow()">确认下单 / 发货</button>
+<div id="payMsg"></div>
+<button onclick="payPending()">确认付款 / 激活邮箱</button>
+</div>
 </div></section>
 
 <section id="view-query" class="view" style="display:none"><div class="card">

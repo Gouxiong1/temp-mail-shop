@@ -24,12 +24,6 @@ let adminOn = false;
 
 function money(cents) { return '¥' + (Number(cents || 0) / 100).toFixed(2); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-function genEmail() {
-  const h = 'abcdef0123456789'; let s = '';
-  for (let i = 0; i < 10; i++) s += h[Math.floor(Math.random() * 16)];
-  const d = ['euploading.com'][Math.floor(Math.random() * 1)];
-  return s + '@' + d;
-}
 
 // ---------- 图形验证码（字母+数字混合，Canvas） ----------
 const caps = {};
@@ -89,6 +83,8 @@ async function renderShop() {
   const q = new URLSearchParams(location.search).get('site');
   if (q && sites.find(s => s.id === q)) sel.value = q;
   updateTier(); sel.onchange = updateTier; drawCaptcha('buy');
+  const pre = document.getElementById('emailPrefix');
+  if (pre && !pre.value) pre.value = randomPrefix();
 }
 function updateTier() {
   const s = siteById(document.getElementById('siteSel').value);
@@ -99,7 +95,7 @@ function updateTier() {
   }).join('');
   g.dataset.k = 'h3'; calcPrice(); refreshDomainStock();
 }
-// ---------- moakt 备胎域名现货：哪个域名没货就禁用对应单选项 ----------
+// ---------- 域名现货：哪个域名没货就禁用下拉里对应那一项 ----------
 // 后端约定：moakt_pool_available() 无参数，返回 [{address, domain}]；没上线或报错时全部保持可选，页面不报错。
 const MOAKT_DOMAINS = ['tmpmail.org', 'teml.net', 'tmpbox.net'];
 async function refreshDomainStock() {
@@ -111,17 +107,15 @@ async function refreshDomainStock() {
     avail = data;
   } catch (e) { return; }
   const has = new Set((Array.isArray(avail) ? avail : []).map(x => x && x.domain));
+  const sel = document.getElementById('domainSel');
+  if (!sel) return;
   MOAKT_DOMAINS.forEach(d => {
-    const input = document.querySelector('input[name=domain][value="' + d + '"]');
-    const label = document.getElementById('domLabel-' + d);
-    if (!input) return;
+    const opt = sel.querySelector('option[value="' + d + '"]');
+    if (!opt) return;
     const inStock = has.has(d);
-    input.disabled = !inStock;
-    if (label) label.textContent = d + '（备胎）' + (inStock ? '' : '（已售完）');
-    if (!inStock && input.checked) {
-      const def = document.querySelector('input[name=domain][value="mailtm"]');
-      if (def) def.checked = true;
-    }
+    opt.disabled = !inStock;
+    opt.textContent = d + (inStock ? '' : '（已售完）');
+    if (!inStock && sel.value === d) sel.value = 'mailtm';
   });
 }
 function pickTier(k) { document.getElementById('tierGrid').dataset.k = k; document.querySelectorAll('#tierGrid .price').forEach(e => e.classList.toggle('sel', e.dataset.k === k)); calcPrice(); }
@@ -195,29 +189,114 @@ function orderOkHtml(data, email) {
     + '<br>请记好订单号，以后不用登录也能在“查订单”里用订单号或这个邮箱地址查到这单。请去“我的订单 / 取货”查看倒计时，去“查看验证码”查看收到的验证码。</div>';
 }
 
-async function buyNow() {
-  const msg = document.getElementById('buyMsg');
+// ---------- 自定义前缀 + 先生成后付款 ----------
+// 前缀只允许小写字母数字及 . _ -，3–32 位，首尾要是字母或数字；后缀点开下拉选域名。
+// 点“点击生成”后只登记待付款订单（不扣钱不发邮箱），等本机建好邮箱再付款激活。
+const PREFIX_RE = /^[a-z0-9][a-z0-9._-]{1,30}[a-z0-9]$/;
+const DOMAIN_OF = { mailtm: 'euploading.com', 'tmpmail.org': 'tmpmail.org', 'teml.net': 'teml.net', 'tmpbox.net': 'tmpbox.net' };
+let pendingOrder = null; // {id, temp_email, provider}
+function randomPrefix() {
+  const h = 'abcdefghjkmnpqrstuvwxyz0123456789'; let s = '';
+  for (let i = 0; i < 10; i++) s += h[Math.floor(Math.random() * h.length)];
+  return s;
+}
+function validPrefix(v) { return PREFIX_RE.test(v); }
+function prefixInput() { return document.getElementById('emailPrefix').value.trim().toLowerCase(); }
+document.getElementById('emailPrefix').addEventListener('input', () => {
+  const v = prefixInput();
+  const hint = document.getElementById('prefixHint');
+  if (!v) { hint.textContent = '前缀用小写字母、数字和 . _ -，3–32 位。'; hint.className = 'muted'; return; }
+  if (validPrefix(v)) { hint.textContent = '可以用的前缀：' + v + '@' + DOMAIN_OF[document.getElementById('domainSel').value]; hint.className = 'muted'; }
+  else { hint.textContent = '前缀不对：只能用小写字母、数字和 . _ -，3–32 位，首尾要是字母或数字。'; hint.className = 'red'; }
+});
+document.getElementById('domainSel').addEventListener('change', () => {
+  const v = prefixInput();
+  const hint = document.getElementById('prefixHint');
+  if (v && validPrefix(v)) hint.textContent = '可以用的前缀：' + v + '@' + DOMAIN_OF[document.getElementById('domainSel').value];
+  refreshDomainStock();
+});
+
+async function generateOrder() {
+  const msg = document.getElementById('genMsg');
+  const btn = document.getElementById('genBtn');
+  if (!meProfile) { msg.innerHTML = '<div class="alert">请先注册 / 登录用户，再生成邮箱。</div>'; return; }
   if (!checkCaptcha('buy', document.getElementById('capBuyIn').value)) { msg.innerHTML = '<div class="alert">图形验证码不对，请重新输入（字母+数字，点图可换一张）。</div>'; drawCaptcha('buy'); return; }
+  const prefix = prefixInput();
+  if (!validPrefix(prefix)) { msg.innerHTML = '<div class="alert">前缀不对：只能用小写字母、数字和 . _ -，3–32 位，首尾要是字母或数字。</div>'; return; }
+  const provider = document.getElementById('domainSel').value;
+  const s = siteById(document.getElementById('siteSel').value);
+  const k = document.getElementById('tierGrid').dataset.k || 'h3';
+  const qty = Math.max(1, parseInt(document.getElementById('qty').value || '1'));
+  msg.innerHTML = '<div class="muted">正在生成邮箱地址…（一般 1 分钟内）</div>';
+  btn.disabled = true;
+  document.getElementById('genBox').style.display = 'none';
+  const { data, error } = await sb.rpc('create_pending_order', {
+    p_site_id: s.id, p_tier: k, p_qty: qty, p_provider: provider, p_prefix: prefix,
+  });
+  if (error) {
+    msg.innerHTML = '<div class="alert">生成失败：' + esc(error.message) + '</div>';
+    drawCaptcha('buy'); btn.disabled = false; return;
+  }
+  pendingOrder = { id: data.order_id, temp_email: data.temp_email, provider };
+  pollPending(data.order_id, msg, btn);
+}
+function pollPending(orderId, msg, btn) {
+  let n = 0;
+  const timer = setInterval(async () => {
+    n++;
+    const { data, error } = await sb.rpc('pending_order_status', { p_order_id: orderId });
+    if (error || !data) {
+      if (n > 60) { clearInterval(timer); msg.innerHTML = '<div class="alert">生成超时了，请再点一次“点击生成”（同一个前缀会接着上次的继续生成，不会重复扣钱）。</div>'; btn.disabled = false; }
+      return;
+    }
+    if (data.status === 'ready') {
+      clearInterval(timer);
+      pendingOrder = { id: orderId, temp_email: data.temp_email, provider: data.provider };
+      msg.innerHTML = '';
+      document.getElementById('genAddr').innerHTML = '你的临时邮箱：<b>' + esc(data.temp_email) + '</b> <button class="ghost" onclick="navigator.clipboard.writeText(\'' + esc(data.temp_email) + '\')">复制邮箱</button><br><span class="muted">请在 10 分钟内付款激活，超时这个地址会被收回。</span>';
+      document.getElementById('genBox').style.display = 'block';
+      btn.disabled = false;
+      refreshDomainStock();
+    } else if (data.status === 'failed') {
+      clearInterval(timer);
+      msg.innerHTML = '<div class="alert">' + esc(failText(data.fail_reason || '')) + '</div>';
+      drawCaptcha('buy'); btn.disabled = false;
+    } else if (n > 60) {
+      clearInterval(timer);
+      msg.innerHTML = '<div class="alert">生成超时了，请再点一次“点击生成”（同一个前缀会接着上次的继续生成，不会重复扣钱）。</div>';
+      btn.disabled = false;
+    }
+  }, 3000);
+}
+function failText(r) {
+  if (/taken|已被别人用/.test(r)) return '这个前缀已经被别人用了，换一个再试';
+  if (/sold_out|没货|已售完/.test(r)) return '这个域名暂时没货，请换个域名试试';
+  if (/domain_not_offered|不支持/.test(r)) return '这个域名暂时不支持自定义前缀，请换个域名试试';
+  return r || '生成失败，换个前缀再试';
+}
+
+async function payPending() {
+  const msg = document.getElementById('payMsg');
+  if (!pendingOrder) { msg.innerHTML = '<div class="alert">请先点“点击生成”生成邮箱地址。</div>'; return; }
   const s = siteById(document.getElementById('siteSel').value);
   const k = document.getElementById('tierGrid').dataset.k || 'h3';
   const qty = Math.max(1, parseInt(document.getElementById('qty').value || '1'));
   const pay = document.querySelector('input[name=pay]:checked').value;
-  const provider = (document.querySelector('input[name=domain]:checked') || {}).value || 'mailtm';
-  if (pay === 'wallet' && !meProfile) { msg.innerHTML = '<div class="alert">钱包支付请先注册 / 登录用户。</div>'; return; }
-  if (pay !== 'wallet' && !meProfile) { msg.innerHTML = '<div class="alert">扫码支付请先注册 / 登录用户，截图确认后才能发货。</div>'; return; }
+  const provider = pendingOrder.provider;
   if (pay === 'wallet') {
-    // 钱包直接扣款，立即发货
+    // 钱包直接扣款，立即激活
     const { data, error } = await sb.rpc('buy_with_wallet', {
-      p_site_id: s.id, p_tier: k, p_qty: qty, p_pay_method: pay, p_temp_email: genEmail(), p_provider: provider,
+      p_site_id: s.id, p_tier: k, p_qty: qty, p_pay_method: pay, p_temp_email: pendingOrder.temp_email, p_provider: provider, p_pending_order_id: pendingOrder.id,
     });
-    if (error) { msg.innerHTML = '<div class="alert">下单失败：' + esc(error.message) + '</div>'; drawCaptcha('buy'); return; }
+    if (error) { msg.innerHTML = '<div class="alert">付款失败：' + esc(error.message) + '</div>'; drawCaptcha('buy'); return; }
     await refreshMe();
     msg.innerHTML = orderOkHtml({ order_id: data.order_id, tier: k, comm_cents: data.comm_cents, is_self: data.is_self }, data.temp_email);
+    pendingOrder = null;
     drawCaptcha('buy');
     refreshDomainStock();
     return;
   }
-  // 扫码支付：上传截图 → 机器 10 秒一轮自动确认，30 秒内放行发货
+  // 扫码支付：上传截图 → 机器 10 秒一轮自动确认，30 秒内放行激活
   const f = document.getElementById('shotFile').files[0];
   if (!f) { msg.innerHTML = '<div class="alert">扫码支付请上传付款截图，截图是确认到账的唯一凭证。</div>'; return; }
   if (Date.now() - f.lastModified > 180000) { msg.innerHTML = '<div class="alert">已过时 / 已过期：截图时间与上传时间相差超过 3 分钟，请重新下单付款。</div>'; return; }
@@ -227,7 +306,7 @@ async function buyNow() {
   const { unit, total } = currentTotal();
   const { data, error } = await sb.rpc('submit_proof', {
     p_kind: 'order', p_amount_cents: total, p_pay_method: pay,
-    p_site_id: s.id, p_tier: k, p_qty: qty, p_image_data: img, p_provider: provider,
+    p_site_id: s.id, p_tier: k, p_qty: qty, p_image_data: img, p_provider: provider, p_pending_order_id: pendingOrder.id,
   });
   if (error) { msg.innerHTML = '<div class="alert">提交截图失败：' + esc(error.message) + '</div>'; drawCaptcha('buy'); return; }
   msg.innerHTML = '<div class="muted">截图已提交，正在自动确认（一般 30 秒内），请不要离开本页…</div>';
@@ -236,6 +315,7 @@ async function buyNow() {
     const o = Array.isArray(ord) ? ord[0] : ord;
     await refreshMe();
     msg.innerHTML = orderOkHtml({ order_id: st.order_id, tier: k, comm_cents: 0, is_self: false }, o ? o.temp_email : '');
+    pendingOrder = null;
     drawCaptcha('buy');
     refreshDomainStock();
   });
